@@ -1,0 +1,520 @@
+.log-terminal {
+  background: var(--bg-primary);
+  border-radius: 8px;
+  overflow: hidden;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+}
+
+.terminal-header {
+  background: var(--bg-secondary);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.header-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.theme-toggle {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle:hover {
+  transform: scale(1.05);
+  background: var(--hover-bg);
+}
+
+.delete-current {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  color: var(--text-primary);
+}
+
+.delete-current:hover:not(:disabled) {
+  background: var(--accent-red);
+  border-color: var(--accent-red);
+  color: white;
+}
+
+.delete-current:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.terminal-title {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.terminal-stats {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.header-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.read-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.read-controls button {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  padding: 6px 12px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.read-controls .delete-current {
+  margin-left: auto;
+}
+
+.read-controls button:hover {
+  background: var(--hover-bg);
+}
+
+.read-controls button.active {
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
+  color: white;
+}
+
+.mark-all-btn {
+  background: var(--accent-green) !important;
+  border-color: var(--accent-green) !important;
+  color: white !important;
+}
+
+.unmark-all-btn {
+  background: var(--accent-red) !important;
+  border-color: var(--accent-red) !important;
+  color: white !important;
+}
+
+.terminal-filters {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.terminal-filters select,
+.terminal-filters input {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  padding: 4px 8px;
+  font-size: 11px;
+  min-width: 120px;
+}
+
+.terminal-filters input:not(.time-input) {
+  flex: 1;
+  min-width: 150px;
+}
+
+.time-range-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 4px 6px;
+}
+
+.time-label {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.time-inputs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.terminal-filters .time-input {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  color: var(--text-primary);
+  font-size: 11px;
+  width: 3.8ch; /* слегка шире для 2–3 символов */
+  min-width: 0; /* переопределяет глобальные min-width */
+  flex: 0 0 auto; /* не растягиваться */
+  text-align: center;
+  padding: 2px 3px;
+}
+
+.terminal-filters .time-input.ms {
+  width: 5.2ch; /* чуть шире для 3 символов миллисекунд */
+}
+
+/* Уменьшаем текстовые инпуты и добавляем стиль для времени */
+/* удалены вспомогательные классы для временной фильтрации */
+
+.terminal-content {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg-primary);
+  position: relative;
+}
+
+.log-list {
+  padding: 8px;
+}
+
+.log-entry {
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background-color 0.1s;
+}
+
+.log-entry:hover {
+  background: var(--hover-bg);
+}
+
+.log-entry.expanded {
+  background: var(--expanded-bg);
+}
+
+.log-main {
+  padding: 8px 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.4;
+}
+
+/* ИСПРАВЛЕННЫЙ индикатор прочитанности - идеальный круг */
+.read-indicator {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  min-height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  color: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.read-indicator:hover {
+  border-color: var(--accent-blue);
+  background: var(--hover-bg);
+}
+
+.read-indicator.read {
+  background: var(--accent-green);
+  border-color: var(--accent-green);
+  color: white;
+}
+
+.read-indicator.read:hover {
+  background: var(--accent-red);
+  border-color: var(--accent-red);
+}
+
+.log-type {
+  font-weight: 600;
+  flex-shrink: 0;
+  min-width: 60px;
+}
+
+.log-time {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  min-width: 80px;
+}
+
+.log-level {
+  font-weight: 600;
+  flex-shrink: 0;
+  min-width: 50px;
+}
+
+.log-component {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.log-req-id {
+  color: var(--accent-blue);
+  background: var(--bg-tertiary);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.log-message {
+  color: var(--text-primary);
+  flex: 1;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.json-button {
+  background: var(--accent-blue);
+  border: none;
+  border-radius: 3px;
+  color: white;
+  padding: 2px 6px;
+  font-size: 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.json-button:hover {
+  background: var(--accent-blue);
+  opacity: 0.9;
+}
+
+.expand-button {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+  width: 16px;
+}
+
+/* Цвета уровней */
+.log-entry.level-error .log-level { color: #ef4444; }
+.log-entry.level-warn .log-level { color: #f59e0b; }
+.log-entry.level-info .log-level { color: #3b82f6; }
+.log-entry.level-debug .log-level { color: #8b5cf6; }
+.log-entry.level-trace .log-level { color: #10b981; }
+
+.log-entry.level-error { border-left: 3px solid #ef4444; }
+.log-entry.level-warn { border-left: 3px solid #f59e0b; }
+.log-entry.level-info { border-left: 3px solid #3b82f6; }
+.log-entry.level-debug { border-left: 3px solid #8b5cf6; }
+.log-entry.level-trace { border-left: 3px solid #10b981; }
+
+/* Стили для прочитанных логов */
+.log-entry.read {
+  opacity: 0.7;
+  background: var(--bg-secondary);
+}
+
+.log-entry.read .log-message {
+  color: var(--text-secondary);
+}
+
+.log-entry.read .log-type,
+.log-entry.read .log-level,
+.log-entry.read .log-component {
+  opacity: 0.8;
+}
+
+/* Детали развернутой записи */
+.log-details {
+  padding: 12px 16px;
+  background: var(--expanded-bg);
+  border-top: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.detail-section {
+  margin-bottom: 16px;
+}
+
+.detail-section h4 {
+  margin: 0 0 8px 0;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+  font-size: 11px;
+}
+
+.detail-grid div {
+  padding: 4px 0;
+}
+
+.detail-grid strong {
+  color: var(--text-secondary);
+}
+
+.raw-json {
+  background: var(--bg-primary);
+  padding: 12px;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 11px;
+  color: var(--text-primary);
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+}
+
+.terminal-content.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--text-secondary);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  max-width: 520px;
+  padding: 16px;
+}
+
+.empty-state svg {
+  margin-bottom: 16px;
+  color: var(--text-secondary);
+}
+
+.empty-state h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Добавьте в конец LogTerminal.css */
+
+/* Стили пагинации */
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.pagination-btn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: var(--hover-bg);
+  border-color: var(--accent-blue);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-width: 150px;
+  text-align: center;
+}
+
+.page-size-select {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+/* Стили загрузки */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: var(--text-secondary);
+}
+
+.spinner.large {
+  width: 32px;
+  height: 32px;
+  border: 3px solid transparent;
+  border-top: 3px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
