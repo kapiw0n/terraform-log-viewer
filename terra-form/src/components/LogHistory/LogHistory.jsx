@@ -2,7 +2,6 @@ import React from 'react';
 import './LogHistory.css';
 
 const LogHistory = ({ history, selectedItem, onSelect, onClear }) => {
-  console.log('LogHistory rendering with', history?.length, 'items');
   
   if (!history || history.length === 0) {
     return (

@@ -32,7 +32,6 @@ const App = () => {
   // Восстановление состояния истории
   const restoreHistoryState = async () => {
     if (history.length > 0 && sessionId) {
-      console.log('Restoring history with', history.length, 'files');
       
       // Если есть текущий файл, проверяем его существование на сервере
       if (currentFileId) {
@@ -44,7 +43,6 @@ const App = () => {
             setSelectedHistoryItem(currentHistoryItem.id);
             setWasLogDeleted(false);
           } catch (error) {
-            console.log('Current file not found on server, clearing...');
             // Файл не существует, очищаем
             setCurrentFileId(null);
             setSelectedHistoryItem(null);
@@ -311,9 +309,6 @@ const App = () => {
   };
 
   // Отладочный вывод
-  console.log('Current history:', history);
-  console.log('Current fileId:', currentFileId);
-  console.log('Selected history item:', selectedHistoryItem);
 
   return (
     <div className="app">
