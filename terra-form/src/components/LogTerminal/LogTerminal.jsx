@@ -284,6 +284,9 @@ const LogTerminal = ({
                 <option value="all">All Operations</option>
                 <option value="plan">Plan</option>
                 <option value="apply">Apply</option>
+                <option value="init">Init</option>
+                <option value="destroy">Destroy</option>
+                <option value="refresh">Refresh</option>
                 <option value="validate">Validate</option>
                 <option value="general">General</option>
               </select>
@@ -396,6 +399,7 @@ const LogEntry = ({ log, index, onShowJson, isRead, onMarkRead, onUnmarkRead }) 
   const getTypeColor = (type) => {
     const typeMap = {
       'plan': '#10b981', 'apply': '#f59e0b', 'validate': '#8b5cf6',
+      'init': '#22c55e', 'destroy': '#ef4444', 'refresh': '#06b6d4',
       'general': '#3b82f6', 'unknown': '#6b7280'
     };
     return typeMap[type?.toLowerCase()] || '#8b5cf6';
