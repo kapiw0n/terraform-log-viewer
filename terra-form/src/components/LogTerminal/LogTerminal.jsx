@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './LogTerminal.css';
 
-const LogTerminal = ({ 
-  logs, 
-  filters, 
-  onFilterChange, 
-  onShowJson, 
-  isDarkTheme, 
+const LogTerminal = ({
+  logs,
+  filters,
+  onFilterChange,
+  onShowJson,
+  isDarkTheme,
   onThemeToggle,
   onDeleteCurrent,
   historyCount,
@@ -18,6 +18,19 @@ const LogTerminal = ({
 }) => {
   const [readLogs, setReadLogs] = useState(new Set());
   const [hideRead, setHideRead] = useState(false);
+  const [rawDataSearch, setRawDataSearch] = useState(filters?.rawDataSearch || '');
+
+  useEffect(() => {
+    if (filters?.rawDataSearch !== undefined && filters.rawDataSearch !== rawDataSearch) {
+      setRawDataSearch(filters.rawDataSearch);
+    }
+  }, [filters?.rawDataSearch]);
+
+  useEffect(() => {
+    if (rawDataSearch !== filters?.rawDataSearch) {
+      onFilterChange('rawDataSearch', rawDataSearch);
+    }
+  }, [rawDataSearch]);
 
   const markAsRead = (logId) => {
     setReadLogs(prev => new Set([...prev, logId]));
@@ -40,9 +53,7 @@ const LogTerminal = ({
     setReadLogs(new Set());
   };
 
-  // Фильтрация логов
   let displayedLogs = logs || [];
-  
   if (hideRead) {
     displayedLogs = displayedLogs.filter(log => !readLogs.has(log.id));
   }
@@ -50,7 +61,6 @@ const LogTerminal = ({
   const readCount = readLogs.size;
   const unreadCount = displayedLogs.length - readCount;
 
-  // Пагинация
   const handlePreviousPage = () => {
     if (pagination.page > 1) {
       onPageChange(pagination.page - 1);
@@ -78,7 +88,7 @@ const LogTerminal = ({
       ss: s ?? '',
       ms: ms ?? ''
     };
-    
+
   };
 
   const formatTimeString = ({ hh, mm, ss, ms }) => {
@@ -101,7 +111,6 @@ const LogTerminal = ({
     onFilterChange(which === 'from' ? 'time_from' : 'time_to', nextStr);
   };
 
-  // Функция для рендеринга контента
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -112,13 +121,13 @@ const LogTerminal = ({
       );
     }
 
-    if (hasLogs) {
+    if (hasLogs && displayedLogs.length > 0) {
       return (
         <div className="log-list">
           {displayedLogs.map((log, index) => (
-            <LogEntry 
-              key={log.id || index} 
-              log={log} 
+            <LogEntry
+              key={log.id || index}
+              log={log}
               index={index}
               onShowJson={onShowJson}
               isRead={readLogs.has(log.id)}
@@ -130,7 +139,6 @@ const LogTerminal = ({
       );
     }
 
-    // Пустые состояния
     if (!hasAnyHistory) {
       return (
         <div className="empty-state">
@@ -198,8 +206,8 @@ const LogTerminal = ({
             </div>
           </div>
           <div className="header-right">
-            <button 
-              className="theme-toggle" 
+            <button
+              className="theme-toggle"
               onClick={onThemeToggle}
               title={isDarkTheme ? "Switch to light theme" : "Switch to dark theme"}
             >
@@ -209,16 +217,15 @@ const LogTerminal = ({
         </div>
 
         <div className="header-controls">
-          {/* Пагинация */}
           <div className="pagination-controls">
-            <button 
+            <button
               onClick={handlePreviousPage}
               disabled={pagination.page <= 1 || isLoading || !hasLogs}
               className="pagination-btn"
             >
               ← Previous
             </button>
-            
+
             <span className="pagination-info">
               {hasLogs ? (
                 <>Page {pagination.page} of {pagination.totalPages}{pagination.totalCount > 0 && ` (${pagination.totalCount} total)`}</>
@@ -226,16 +233,16 @@ const LogTerminal = ({
                 <>No pages</>
               )}
             </span>
-            
-            <button 
+
+            <button
               onClick={handleNextPage}
               disabled={pagination.page >= pagination.totalPages || isLoading || !hasLogs}
               className="pagination-btn"
             >
               Next →
             </button>
-            
-            <select 
+
+            <select
               value={pagination.pageSize}
               onChange={(e) => onPageChange(1, parseInt(e.target.value))}
               disabled={isLoading || !hasLogs}
@@ -248,14 +255,13 @@ const LogTerminal = ({
             </select>
           </div>
 
-          {/* Управление прочитанными */}
           {hasLogs && (
             <div className="read-controls">
-              <button 
+              <button
                 className={`hide-read-toggle ${hideRead ? 'active' : ''}`}
                 onClick={() => setHideRead(!hideRead)}
               >
-                {hideRead ? '👁 Show Read' : '👁‍🗨 Hide Read'}
+                {hideRead ? '👁 Show Read' : '👁 Hide Read'}
               </button>
               <button onClick={markAllAsRead} className="mark-all-btn">
                 ✓ Mark All Read
@@ -263,7 +269,7 @@ const LogTerminal = ({
               <button onClick={unmarkAllAsRead} className="unmark-all-btn">
                 ✗ Unmark All Read
               </button>
-              <button 
+              <button
                 className="delete-current"
                 onClick={onDeleteCurrent}
                 disabled={!currentFileId}
@@ -274,11 +280,10 @@ const LogTerminal = ({
             </div>
           )}
 
-          {/* Фильтры */}
           {filters && (
             <div className="terminal-filters">
-              <select 
-                value={filters.operation || 'all'} 
+              <select
+                value={filters.operation || 'all'}
                 onChange={(e) => onFilterChange('operation', e.target.value)}
               >
                 <option value="all">All Operations</option>
@@ -305,7 +310,7 @@ const LogTerminal = ({
                         <span>:</span>
                         <input className="time-input ss" inputMode="numeric" placeholder="SS" value={tf.ss} onChange={(e) => handleTimePartChange('from', 'ss', e.target.value)} />
                         <span>.</span>
-                        <input className="time-input ms" inputMode="numeric" placeholder="ms" value={tf.ms} onChange={(e) => handleTimePartChange('from', 'ms', e.target.value)} />
+                        <input className="time-input ms" inputMode="numeric" placeholder="MS" value={tf.ms} onChange={(e) => handleTimePartChange('from', 'ms', e.target.value)} />
                       </div>
                     </div>
                     <div className="time-range-group" title="End time">
@@ -317,15 +322,15 @@ const LogTerminal = ({
                         <span>:</span>
                         <input className="time-input ss" inputMode="numeric" placeholder="SS" value={tt.ss} onChange={(e) => handleTimePartChange('to', 'ss', e.target.value)} />
                         <span>.</span>
-                        <input className="time-input ms" inputMode="numeric" placeholder="ms" value={tt.ms} onChange={(e) => handleTimePartChange('to', 'ms', e.target.value)} />
+                        <input className="time-input ms" inputMode="numeric" placeholder="MS" value={tt.ms} onChange={(e) => handleTimePartChange('to', 'ms', e.target.value)} />
                       </div>
                     </div>
                   </>
                 );
               })()}
 
-              <select 
-                value={filters.level || 'all'} 
+              <select
+                value={filters.level || 'all'}
                 onChange={(e) => onFilterChange('level', e.target.value)}
               >
                 <option value="all">All Levels</option>
@@ -335,9 +340,9 @@ const LogTerminal = ({
                 <option value="debug">Debug</option>
                 <option value="trace">Trace</option>
               </select>
-              
-              <select 
-                value={filters.component || 'all'} 
+
+              <select
+                value={filters.component || 'all'}
                 onChange={(e) => onFilterChange('component', e.target.value)}
               >
                 <option value="all">All Components</option>
@@ -348,7 +353,17 @@ const LogTerminal = ({
                 <option value="http">HTTP</option>
                 <option value="grpc">gRPC</option>
               </select>
-              
+
+              <select
+                value={filters.body_filter || 'all'}
+                onChange={(e) => onFilterChange('body_filter', e.target.value)}
+              >
+                <option value="all">All Logs</option>
+                <option value="has_req_body">Has tf_http_req_body</option>
+                <option value="has_res_body">Has tf_http_res_body</option>
+                <option value="has_both">Has both (req & res)</option>
+              </select>
+
               <input
                 type="text"
                 placeholder="Request ID..."
@@ -356,7 +371,7 @@ const LogTerminal = ({
                 onChange={(e) => onFilterChange('req_id', e.target.value)}
                 className="text-input"
               />
-              
+
               <input
                 type="text"
                 placeholder="Search messages..."
@@ -364,11 +379,19 @@ const LogTerminal = ({
                 onChange={(e) => onFilterChange('search_text', e.target.value)}
                 className="text-input"
               />
+
+              <input
+                type="text"
+                placeholder="Search in raw data..."
+                value={rawDataSearch}
+                onChange={(e) => setRawDataSearch(e.target.value)}
+                className="text-input"
+              />
             </div>
           )}
         </div>
       </div>
-      
+
       <div className="terminal-content">
         {renderContent()}
       </div>
@@ -376,7 +399,6 @@ const LogTerminal = ({
   );
 };
 
-// Компонент LogEntry остается без изменений
 const LogEntry = ({ log, index, onShowJson, isRead, onMarkRead, onUnmarkRead }) => {
   const [expanded, setExpanded] = useState(false);
 
@@ -425,7 +447,6 @@ const LogEntry = ({ log, index, onShowJson, isRead, onMarkRead, onUnmarkRead }) 
   return (
     <div className={`log-entry level-${getLevelColor(logLevel)} ${expanded ? 'expanded' : ''} ${isRead ? 'read' : ''}`}>
       <div className="log-main" onClick={handleClick}>
-        {/* Обновленный индикатор прочитанности - кружок с галочкой */}
         <button 
           className={`read-indicator ${isRead ? 'read' : ''}`}
           onClick={handleMarkClick}
@@ -464,7 +485,7 @@ const LogEntry = ({ log, index, onShowJson, isRead, onMarkRead, onUnmarkRead }) 
         )}
         
         <button className="expand-button">
-          {expanded ? '▼' : '▶️'}
+          {expanded ? '▼' : '▶'}
         </button>
       </div>
       
@@ -486,11 +507,134 @@ const LogEntry = ({ log, index, onShowJson, isRead, onMarkRead, onUnmarkRead }) 
           {log.raw_data && (
             <div className="detail-section">
               <h4>Исходные данные:</h4>
-              <pre className="raw-json">{JSON.stringify(log.raw_data, null, 2)}</pre>
+              <RawDataViewer data={log.raw_data} />
             </div>
           )}
         </div>
       )}
+    </div>
+  );
+};
+
+const JsonRenderer = ({ data, expandedMap, onToggle, hoveredButton, setHoveredButton }) => {
+  const renderValue = (value, path = '', indent = 0) => {
+    if (value == null) return <span>null</span>;
+
+    if (typeof value === 'string') {
+      return <span>"{value.replace(/"/g, '\\"')}"</span>;
+    }
+
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return <span>{value.toString()}</span>;
+    }
+
+    if (Array.isArray(value)) {
+      if (value.length === 0) return <span>[]</span>;
+
+      const style = indent > 0 ? { paddingLeft: 20 } : {};
+      return (
+        <span>
+          [
+          {value.map((v, i) => (
+            <div key={i} style={style}>
+              {renderValue(v, `${path}[${i}]`, indent + 1)}
+              {i < value.length - 1 ? ',' : ''}
+            </div>
+          ))}
+          ]
+        </span>
+      );
+    }
+
+    const keys = Object.keys(value);
+    if (keys.length === 0) return <span>{}</span>;
+
+    const style = indent > 0 ? { paddingLeft: 20 } : {};
+    return (
+      <span>
+        {'{'}
+        {keys.map((k, i) => {
+          const v = value[k];
+          const newPath = path ? `${path}.${k}` : k;
+          const isHttpBody = k === 'tf_http_res_body' || k === 'tf_http_req_body';
+          const isExpanded = expandedMap.has(newPath);
+
+          let displayValue;
+          if (isHttpBody) {
+            if (!isExpanded) {
+              displayValue = (
+                <span>
+                  {'{...}'}
+                  <button
+                    className="json-toggle-btn"
+                    onClick={() => onToggle(newPath)}
+                    onMouseEnter={() => setHoveredButton(newPath)}
+                    onMouseLeave={() => setHoveredButton(null)}
+                    title="Нажмите для раскрытия"
+                  >
+                    раскрыть
+                  </button>
+                </span>
+              );
+            } else {
+              displayValue = (
+                <span style={{ position: 'relative' }}>
+                  {renderValue(v, newPath, indent + 1)}
+                  <button
+                    className="json-toggle-btn json-hide-btn"
+                    onClick={() => onToggle(newPath)}
+                    onMouseEnter={() => setHoveredButton(newPath)}
+                    onMouseLeave={() => setHoveredButton(null)}
+                    title="Нажмите для сворачивания"
+                  >
+                    скрыть
+                  </button>
+                </span>
+              );
+            }
+          } else {
+            displayValue = renderValue(v, newPath, indent + 1);
+          }
+
+          return (
+            <div key={k} style={style}>
+              "{k}": {displayValue}{i < keys.length - 1 ? ',' : ''}
+            </div>
+          );
+        })}
+        {'}'}
+      </span>
+    );
+  };
+
+  return <div className="raw-json" style={{ fontFamily: 'monospace', whiteSpace: 'pre' }}>{renderValue(data, '', 0)}</div>;
+};
+
+const RawDataViewer = ({ data }) => {
+  const [expandedFields, setExpandedFields] = useState(new Set());
+  const [hoveredButton, setHoveredButton] = useState(null);
+
+  const toggleField = (path) => {
+    setExpandedFields(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(path)) {
+        newSet.delete(path);
+      } else {
+        newSet.add(path);
+      }
+      return newSet;
+    });
+  };
+
+  return (
+    <div className="raw-data-viewer">
+      <JsonRenderer
+        data={data}
+        expandedMap={expandedFields}
+        onToggle={toggleField}
+        hoveredButton={hoveredButton}
+        setHoveredButton={setHoveredButton}
+      />
     </div>
   );
 };

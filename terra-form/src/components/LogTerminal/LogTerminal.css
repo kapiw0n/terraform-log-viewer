@@ -189,19 +189,20 @@
   border-radius: 3px;
   color: var(--text-primary);
   font-size: 11px;
-  width: 3.8ch; /* слегка шире для 2–3 символов */
-  min-width: 0; /* переопределяет глобальные min-width */
-  flex: 0 0 auto; /* не растягиваться */
+  width: 3.8ch;
+  min-width: 0;
+  flex: 0 0 auto;
   text-align: center;
   padding: 2px 3px;
 }
 
 .terminal-filters .time-input.ms {
-  width: 5.2ch; /* чуть шире для 3 символов миллисекунд */
+  width: 5.2ch;
 }
 
-/* Уменьшаем текстовые инпуты и добавляем стиль для времени */
-/* удалены вспомогательные классы для временной фильтрации */
+.time-inputs span {
+  color: var(--text-primary);
+}
 
 .terminal-content {
   flex: 1;
@@ -236,7 +237,6 @@
   line-height: 1.4;
 }
 
-/* ИСПРАВЛЕННЫЙ индикатор прочитанности - идеальный круг */
 .read-indicator {
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
@@ -342,7 +342,6 @@
   width: 16px;
 }
 
-/* Цвета уровней */
 .log-entry.level-error .log-level { color: #ef4444; }
 .log-entry.level-warn .log-level { color: #f59e0b; }
 .log-entry.level-info .log-level { color: #3b82f6; }
@@ -355,7 +354,6 @@
 .log-entry.level-debug { border-left: 3px solid #8b5cf6; }
 .log-entry.level-trace { border-left: 3px solid #10b981; }
 
-/* Стили для прочитанных логов */
 .log-entry.read {
   opacity: 0.7;
   background: var(--bg-secondary);
@@ -371,7 +369,6 @@
   opacity: 0.8;
 }
 
-/* Детали развернутой записи */
 .log-details {
   padding: 12px 16px;
   background: var(--expanded-bg);
@@ -451,9 +448,6 @@
   font-size: 14px;
 }
 
-/* Добавьте в конец LogTerminal.css */
-
-/* Стили пагинации */
 .pagination-controls {
   display: flex;
   align-items: center;
@@ -499,7 +493,6 @@
   font-size: 12px;
 }
 
-/* Стили загрузки */
 .loading-state {
   display: flex;
   flex-direction: column;
@@ -517,4 +510,81 @@
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 16px;
+}
+
+.raw-data-viewer {
+  font-size: 11px;
+  color: var(--text-primary);
+}
+
+.json-with-toggles {
+  position: relative;
+}
+
+.http-body-controls {
+  margin-top: 12px;
+}
+
+.http-body-toggle-btn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 6px 10px;
+  transition: all 0.2s ease;
+  margin-bottom: 8px;
+}
+
+.http-body-toggle-btn:hover {
+  background: var(--hover-bg);
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+}
+
+.http-body-expanded {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 12px;
+  margin-top: 8px;
+}
+
+.http-body-header {
+  margin-bottom: 8px;
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.http-body-expanded .raw-json {
+  margin: 0;
+  max-height: 300px;
+  background: var(--bg-primary);
+}
+
+.raw-data-viewer .json-toggle-btn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  color: var(--text-primary);
+  font-size: 10px;
+  padding: 2px 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+  margin-left: 5px;
+  font-family: monospace;
+}
+
+.raw-data-viewer .json-toggle-btn:hover {
+  background: var(--hover-bg);
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+}
+
+.raw-data-viewer .json-hide-btn {
+  position: absolute;
+  left: 20px;
+  top: 0px;
 }

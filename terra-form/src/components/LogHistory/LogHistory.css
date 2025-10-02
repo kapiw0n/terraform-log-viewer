@@ -14,11 +14,6 @@
   border-bottom: 1px solid var(--border-color);
 }
 
-.history-nav { /* removed */ }
-.nav-btn { /* removed */ }
-.nav-btn:disabled { /* removed */ }
-.nav-info { /* removed */ }
-
 .history-header h3 {
   font-size: 16px;
   font-weight: 600;

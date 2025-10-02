@@ -1,4 +1,3 @@
-// hooks/useLocalStorage.js
 import { useState, useEffect } from 'react';
 
 export const useLocalStorage = (key, initialValue) => {
@@ -16,7 +15,6 @@ export const useLocalStorage = (key, initialValue) => {
     }
   });
 
-  // Используем useEffect для синхронизации с localStorage при изменении storedValue
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {

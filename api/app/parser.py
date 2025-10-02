@@ -1,71 +1,84 @@
 import json
 import re
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
 
 class TerraformLogParser:
     def __init__(self):
         self.parsed_logs = []
-        self.json_bodies_map = {}
-        # Убрали глобальное состояние current_operation
-    
-    def parse_file(self, file_path: str) -> Dict:
-        """Основной метод парсинга файла логов"""
+
+    def parse_file(self, file_path):
         with open(file_path, 'r', encoding='utf-8') as f:
             for line_num, line in enumerate(f, 1):
                 line = line.strip()
                 if not line:
                     continue
-                    
+
                 try:
                     data = json.loads(line)
                     self.process_log_entry(data, line_num)
                 except json.JSONDecodeError:
-                    # Обрабатываем не-JSON строки с эвристиками
                     self.process_raw_line(line, line_num)
-        
+
         return {
             'count': len(self.parsed_logs),
             'logs': self.parsed_logs,
-            'json_bodies': self.json_bodies_map,
             'statistics': self.generate_statistics()
         }
-    
-    def process_log_entry(self, data: Dict, line_num: int):
-        """Обрабатывает JSON запись лога"""
-        # Определяем операцию, уровень и компонент
-        operation = self.detect_operation(data)
-        level = self.extract_level(data)
-        component = self.detect_component(data)
-        message_type = self.detect_message_type(data)
-        
-        # Создаем структурированную запись
+
+    def process_log_entry(self, data, line_num):
+        parsed_data = self.parse_json_bodies_in_data(data)
+
+        operation = self.detect_operation(parsed_data)
+        level = self.extract_level(parsed_data)
+        component = self.detect_component(parsed_data)
+        message_type = self.detect_message_type(parsed_data)
+
         log_entry = {
             'id': f"log_{line_num}",
-            'timestamp': self.extract_timestamp(data),
+            'timestamp': self.extract_timestamp(parsed_data),
             'level': level,
             'operation': operation,
             'component': component,
             'message_type': message_type,
-            'message': self.extract_message(data),
-            'raw_data': data,
+            'message': self.extract_message(parsed_data),
+            'raw_data': parsed_data,
             'line_number': line_num,
-            'tf_req_id': data.get('@request_id') or data.get('tf_req_id') or data.get('req_id', ''),
-            'tf_resource_type': data.get('@resource_type') or data.get('tf_resource_type') or data.get('resource_type', ''),
-            'tf_rpc': data.get('@rpc') or data.get('tf_rpc') or data.get('rpc', '')
+            'tf_req_id': parsed_data.get('@request_id') or parsed_data.get('tf_req_id') or parsed_data.get('req_id', ''),
+            'tf_resource_type': parsed_data.get('@resource_type') or parsed_data.get('tf_resource_type') or parsed_data.get('resource_type', ''),
+            'tf_rpc': parsed_data.get('@rpc') or parsed_data.get('tf_rpc') or parsed_data.get('rpc', '')
         }
-        
+
         self.parsed_logs.append(log_entry)
-        self.extract_json_bodies(log_entry['id'], data)
-    
-    def process_raw_line(self, line: str, line_num: int):
-        """Обрабатывает не-JSON строки с помощью эвристик"""
-        # Эвристики для извлечения данных из raw строк
+
+    def parse_json_bodies_in_data(self, data):
+        result = data.copy()
+
+        json_fields = ['tf_http_req_body', 'tf_http_res_body']
+
+        for field in json_fields:
+            if field in result and result[field]:
+                field_value = result[field]
+
+                if isinstance(field_value, str) and field_value.strip():
+                    try:
+                        parsed_json = json.loads(field_value)
+                        result[field] = parsed_json
+                    except json.JSONDecodeError:
+                        try:
+                            unescaped = field_value.encode().decode('unicode_escape')
+                            parsed_json = json.loads(unescaped)
+                            result[field] = parsed_json
+                        except (json.JSONDecodeError, UnicodeDecodeError):
+                            pass
+
+        return result
+
+    def process_raw_line(self, line, line_num):
         timestamp = self.extract_timestamp_from_raw(line)
         level = self.extract_level_from_raw(line)
         operation = self.detect_operation_from_raw(line)
         component = self.detect_component_from_raw(line)
-        
+
         log_entry = {
             'id': f"raw_{line_num}",
             'timestamp': timestamp,
@@ -80,15 +93,13 @@ class TerraformLogParser:
             'tf_resource_type': '',
             'tf_rpc': ''
         }
-        
+
         self.parsed_logs.append(log_entry)
-    
-    def detect_operation(self, data: Dict) -> str:
-        """Определяет операцию Terraform с улучшенной эвристикой"""
+
+    def detect_operation(self, data):
         message = self.extract_message(data)
         message_lower = message.lower()
-        
-        # Улучшенные маркеры операций (в нижнем регистре)
+
         operation_markers = {
             'plan': [
                 'plan',
@@ -107,7 +118,7 @@ class TerraformLogParser:
             ],
             'apply': [
                 'apply',
-                'terraform apply', 
+                'terraform apply',
                 'apply operation',
                 'applying',
                 'apply:',
@@ -167,32 +178,29 @@ class TerraformLogParser:
                 'reconcile state'
             ]
         }
-        
+
         for op, markers in operation_markers.items():
             if any(marker in message_lower for marker in markers):
                 return op
-        
-        # Дополнительные эвристики из полей данных
+
         if 'plan' in str(data.get('@module', '')).lower():
             return 'plan'
         elif 'apply' in str(data.get('@module', '')).lower():
             return 'apply'
         elif 'init' in str(data.get('@module', '')).lower():
             return 'init'
-        
-        # Эвристика из типа RPC
+
         rpc_type = data.get('tf_rpc', '')
         if 'plan' in rpc_type.lower():
             return 'plan'
         elif 'apply' in rpc_type.lower():
             return 'apply'
-        
+
         return 'general'
-    
-    def detect_operation_from_raw(self, line: str) -> str:
-        """Определяет операцию из raw строки"""
+
+    def detect_operation_from_raw(self, line):
         line_lower = line.lower()
-        
+
         operation_markers = {
             'plan': ['plan', 'planning'],
             'apply': ['apply', 'applying'],
@@ -200,18 +208,17 @@ class TerraformLogParser:
             'init': ['init', 'initializing'],
             'destroy': ['destroy', 'destroying']
         }
-        
+
         for op, markers in operation_markers.items():
             if any(marker in line_lower for marker in markers):
                 return op
-        
+
         return 'general'
-    
-    def detect_component(self, data: Dict) -> str:
-        """Определяет компонент системы"""
+
+    def detect_component(self, data):
         message = self.extract_message(data)
         message_lower = message.lower()
-        
+
         component_indicators = {
             'core': [
                 'terraform', 'cli', 'command', 'args', 'version',
@@ -236,17 +243,16 @@ class TerraformLogParser:
                 'grpc', 'rpc', 'protocol', 'client', 'server'
             ]
         }
-        
+
         for component, indicators in component_indicators.items():
             if any(indicator in message_lower for indicator in indicators):
                 return component
-        
+
         return 'unknown'
-    
-    def detect_component_from_raw(self, line: str) -> str:
-        """Определяет компонент из raw строки"""
+
+    def detect_component_from_raw(self, line):
         line_lower = line.lower()
-        
+
         component_indicators = {
             'core': ['terraform', 'cli', 'command'],
             'backend': ['backend', 'state'],
@@ -254,18 +260,17 @@ class TerraformLogParser:
             'http': ['http', 'request'],
             'grpc': ['grpc', 'rpc']
         }
-        
+
         for component, indicators in component_indicators.items():
             if any(indicator in line_lower for indicator in indicators):
                 return component
-        
+
         return 'unknown'
-    
-    def detect_message_type(self, data: Dict) -> str:
-        """Определяет тип сообщения"""
+
+    def detect_message_type(self, data):
         message = self.extract_message(data)
         message_lower = message.lower()
-        
+
         if 'error' in message_lower or 'failed' in message_lower:
             return 'error'
         elif 'warning' in message_lower or 'warn' in message_lower:
@@ -274,12 +279,10 @@ class TerraformLogParser:
             return 'debug'
         elif 'trace' in message_lower:
             return 'trace'
-        
+
         return 'info'
-    
-    def extract_level(self, data: Dict) -> str:
-        """Извлекает уровень логирования"""
-        # Прямое получение из полей (приоритет по порядку)
+
+    def extract_level(self, data):
         level_fields = ['@level', 'level', 'log_level', 'severity']
         for field in level_fields:
             level = data.get(field)
@@ -287,10 +290,9 @@ class TerraformLogParser:
                 level_str = str(level).lower()
                 if level_str in ['error', 'warn', 'warning', 'info', 'debug', 'trace']:
                     return 'warn' if level_str == 'warning' else level_str
-        
-        # Эвристический анализ сообщения
+
         message = self.extract_message(data).lower()
-        
+
         level_patterns = {
             'error': ['error', 'failed', 'failure', 'exception', 'panic', 'fatal'],
             'warn': ['warn', 'warning', 'deprecated', 'deprecation'],
@@ -298,17 +300,16 @@ class TerraformLogParser:
             'debug': ['debug', 'checking', 'scanning', 'reading', 'writing'],
             'trace': ['trace', 'waiting', 'calling', 'entering', 'exiting']
         }
-        
+
         for level_name, patterns in level_patterns.items():
             if any(pattern in message for pattern in patterns):
                 return level_name
-        
+
         return 'info'
-    
-    def extract_level_from_raw(self, line: str) -> str:
-        """Извлекает уровень из raw строки"""
+
+    def extract_level_from_raw(self, line):
         line_lower = line.lower()
-        
+
         level_patterns = {
             'error': ['error', 'failed', 'failure', 'exception'],
             'warn': ['warn', 'warning'],
@@ -316,112 +317,73 @@ class TerraformLogParser:
             'debug': ['debug'],
             'trace': ['trace']
         }
-        
+
         for level_name, patterns in level_patterns.items():
             if any(pattern in line_lower for pattern in patterns):
                 return level_name
-        
+
         return 'info'
-    
-    def extract_timestamp(self, data: Dict) -> str:
-        """Извлекает и форматирует timestamp"""
+
+    def extract_timestamp(self, data):
         timestamp_fields = ['@timestamp', 'timestamp', 'time', '@time']
-        
+
         for field in timestamp_fields:
             timestamp_str = data.get(field)
             if timestamp_str:
                 try:
-                    # Нормализуем формат
                     if isinstance(timestamp_str, str):
                         if 'Z' in timestamp_str:
                             timestamp_str = timestamp_str.replace('Z', '+00:00')
-                        
+
                         dt = datetime.fromisoformat(timestamp_str)
-                        return dt.strftime('%H:%M:%S.%f')[:-3]  # HH:MM:SS.mmm
+                        return dt.strftime('%H:%M:%S.%f')[:-3]
                 except (ValueError, TypeError):
                     continue
-        
+
         return '--:--:--'
-    
-    def extract_timestamp_from_raw(self, line: str) -> str:
-        """Пытается извлечь timestamp из raw строки с помощью regex"""
+
+    def extract_timestamp_from_raw(self, line):
         patterns = [
-            r'\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}',  # ISO format
-            r'\d{2}:\d{2}:\d{2}',  # HH:MM:SS
-            r'\d{2}:\d{2}:\d{2}\.\d{3}'  # HH:MM:SS.mmm
+            r'\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}',
+            r'\d{2}:\d{2}:\d{2}',
+            r'\d{2}:\d{2}:\d{2}\.\d{3}'
         ]
-        
+
         for pattern in patterns:
             match = re.search(pattern, line)
             if match:
                 timestamp = match.group()
-                # Если есть миллисекунды - убираем их
                 if '.' in timestamp:
                     timestamp = timestamp.split('.')[0]
                 return timestamp
-        
+
         return '--:--:--'
-    
-    def extract_req_id_from_raw(self, line: str) -> str:
-        """Извлекает request ID из raw строки"""
+
+    def extract_req_id_from_raw(self, line):
         patterns = [
             r'req[_\-]id[=:]?\s*([\w\-]+)',
             r'request[_\-]id[=:]?\s*([\w\-]+)',
             r'\[req[_\-]id=([\w\-]+)\]'
         ]
-        
+
         for pattern in patterns:
             match = re.search(pattern, line, re.IGNORECASE)
             if match:
                 return match.group(1)
-        
+
         return ''
-    
-    def extract_message(self, data: Dict) -> str:
-        """Извлекает сообщение из различных возможных полей"""
+
+    def extract_message(self, data):
         message_fields = ['@message', 'message', 'msg', 'log', 'text']
-        
+
         for field in message_fields:
             message = data.get(field)
             if message:
                 return str(message)
-        
-        # Если нет явного поля сообщения, используем весь JSON
+
         return json.dumps(data, ensure_ascii=False)
-    
-    def extract_json_bodies(self, log_id: str, data: Dict):
-        """Извлекает JSON тела из полей запроса/ответа"""
-        if not log_id:
-            return
-        
-        json_fields = [
-            'tf_http_req_body', 'tf_http_res_body', 
-            'request_body', 'response_body',
-            'body', 'data', 'json'
-        ]
-        
-        for field in json_fields:
-            if field in data and data[field]:
-                json_str = data[field]
-                if isinstance(json_str, str) and json_str.strip():
-                    try:
-                        json_data = json.loads(json_str)
-                        body_entry = {
-                            'field_name': field,
-                            'json_data': json_data
-                        }
-                    except json.JSONDecodeError:
-                        body_entry = {
-                            'field_name': field,
-                            'json_data': {'raw_string': json_str}
-                        }
-                    
-                    if log_id not in self.json_bodies_map:
-                        self.json_bodies_map[log_id] = []
-                    self.json_bodies_map[log_id].append(body_entry)
-    
-    def generate_statistics(self) -> Dict:
-        """Генерирует статистику по логам"""
+
+    def generate_statistics(self):
         stats = {
             'total_entries': len(self.parsed_logs),
             'by_level': {},
@@ -429,22 +391,18 @@ class TerraformLogParser:
             'by_component': {},
             'errors_count': 0
         }
-        
+
         for log in self.parsed_logs:
-            # Статистика по уровням
             level = log['level']
             stats['by_level'][level] = stats['by_level'].get(level, 0) + 1
-            
-            # Статистика по операциям
+
             operation = log['operation']
             stats['by_operation'][operation] = stats['by_operation'].get(operation, 0) + 1
-            
-            # Статистика по компонентам
+
             component = log['component']
             stats['by_component'][component] = stats['by_component'].get(component, 0) + 1
-            
-            # Подсчет ошибок
+
             if log['level'] == 'error':
                 stats['errors_count'] += 1
-        
+
         return stats

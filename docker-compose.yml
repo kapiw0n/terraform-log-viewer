@@ -1,60 +1,32 @@
 version: '3.8'
 
 services:
-  # Django API сервис
-  api:
+  # Django бэкенд
+  backend:
     build: ./api
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./api:/app
-      - /app/__pycache__
-    environment:
-      - DEBUG=1
-      - DJANGO_SETTINGS_MODULE=core.settings
-      - DATABASE_URL=sqlite:///db.sqlite3
-    env_file:
-      - .env
     command: >
       sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
              python manage.py runserver 0.0.0.0:8000"
-    networks:
-      - app-network
+    volumes:
+      - ./media:/app/media
+      - ./api/uploaded_logs:/app/api/uploaded_logs
+      - ./api/db.sqlite3:/app/db.sqlite3
+    environment:
+      - DEBUG=True
+      - DJANGO_SETTINGS_MODULE=api.settings
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "8000:8000"
 
-  # React фронтенд сервис
+  # React фронтенд
   frontend:
-    build: ./frontend
+    build: 
+      context: ./terra-form
+      dockerfile: Dockerfile
     ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      - "5173:80"  # React на порту 5173
     environment:
-      - VITE_API_URL=http://localhost:8000/api
-      - CHOKIDAR_USEPOLLING=true
+      - REACT_APP_API_URL=http://127.0.0.1:8000
     depends_on:
-      - api
-    networks:
-      - app-network
-    command: npm run dev -- --host 0.0.0.0
-
-  # База данных (опционально - PostgreSQL)
-  db:
-    image: postgres:13
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_DB=mydatabase
-      - POSTGRES_USER=myuser
-      - POSTGRES_PASSWORD=mypassword
-    ports:
-      - "5432:5432"
-    networks:
-      - app-network
-
-networks:
-  app-network:
-    driver: bridge
-
-volumes:
-  postgres_data:
+      - backend
